@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -18,6 +19,9 @@ import (
 
 	"github.com/wish/dev"
 	"github.com/wish/dev/config"
+
+	"github.com/ContextLogic/wish-dev-plugin-sdk/sdk"
+	"github.com/hashicorp/go-plugin"
 )
 
 var (
@@ -271,6 +275,92 @@ may have been brought up to support this project.`,
 			},
 		}
 		projectCmd.AddCommand(alias)
+	}
+
+	pluginCmd := &cobra.Command{
+		Use:   "plugin",
+		Short: project.Name + " run plugin",
+		Long: "Run an extended plugin for " + project.Name + `. Choose the plugin name from "Available Commands" to start the plugin`,
+		Run: func(cmd *cobra.Command, args []string) {
+			pluginCommands := []string{}
+			for k, _ := range sdk.PluginMap {
+				pluginCommands = append(pluginCommands, k)
+			}
+			if len(args) == 0 {
+				log.Fatalln("Plugin command needed. Available Commands:", pluginCommands)
+			}
+			pluginName := args[0]
+			fmt.Println(pluginName)
+			_, ok := sdk.PluginMap[pluginName]
+			if !ok {
+				log.Fatalln("Plugin", pluginName, "does not exist!")
+			}
+			/*
+			_, err := ioutil.ReadFile("./plugin/" + pluginName)
+			if err != nil {
+				log.Fatalln("can't find the plugin file: %v", err)
+			}
+			client := plugin.NewClient(&plugin.ClientConfig{
+				HandshakeConfig: sdk.HandshakeConfig,
+				Plugins:         sdk.PluginMap,
+				Cmd:             exec.Command(fmt.Sprintf("./plugin/%s", pluginName)),
+				//Logger:          logger,
+			})
+			defer client.Kill()
+
+			// Connect via RPC
+			rpcClient, err := client.Client()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Request the plugin
+			raw, err := rpcClient.Dispense(pluginName)
+			if err != nil {
+				log.Fatal(err)
+			}
+			runner := raw.(sdk.PluginRunner)
+			fmt.Println(runner.Run(args[1:]))
+			 */
+		},
+	}
+	projectCmd.AddCommand(pluginCmd)
+	for key, _ := range sdk.PluginMap {
+		pluginSubcmd := &cobra.Command{
+			Use:   key,
+			Short: "run plugin " + key,
+			Run: func(cmd *cobra.Command, args []string) {
+				//all := append([]string{key}, args...)
+				fmt.Println(key)
+				pluginName := key
+				_, err := ioutil.ReadFile("./plugin/" + pluginName)
+				if err != nil {
+					log.Fatalln("can't find the plugin file: %v", err)
+				}
+				client := plugin.NewClient(&plugin.ClientConfig{
+					HandshakeConfig: sdk.HandshakeConfig,
+					Plugins:         sdk.PluginMap,
+					Cmd:             exec.Command(fmt.Sprintf("./plugin/%s", pluginName)),
+					//Logger:          logger,
+				})
+				defer client.Kill()
+
+				// Connect via RPC
+				rpcClient, err := client.Client()
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				// Request the plugin
+				raw, err := rpcClient.Dispense(pluginName)
+				if err != nil {
+					log.Fatal(err)
+				}
+				runner := raw.(sdk.PluginRunner)
+				fmt.Println(runner.Run(args[0:]))
+			},
+		}
+		pluginCmd.AddCommand(pluginSubcmd)
 	}
 
 }
