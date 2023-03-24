@@ -290,38 +290,10 @@ may have been brought up to support this project.`,
 				log.Fatalln("Plugin command needed. Available Commands:", pluginCommands)
 			}
 			pluginName := args[0]
-			fmt.Println(pluginName)
 			_, ok := sdk.PluginMap[pluginName]
 			if !ok {
 				log.Fatalln("Plugin", pluginName, "does not exist!")
 			}
-			/*
-			_, err := ioutil.ReadFile("./plugin/" + pluginName)
-			if err != nil {
-				log.Fatalln("can't find the plugin file: %v", err)
-			}
-			client := plugin.NewClient(&plugin.ClientConfig{
-				HandshakeConfig: sdk.HandshakeConfig,
-				Plugins:         sdk.PluginMap,
-				Cmd:             exec.Command(fmt.Sprintf("./plugin/%s", pluginName)),
-				//Logger:          logger,
-			})
-			defer client.Kill()
-
-			// Connect via RPC
-			rpcClient, err := client.Client()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// Request the plugin
-			raw, err := rpcClient.Dispense(pluginName)
-			if err != nil {
-				log.Fatal(err)
-			}
-			runner := raw.(sdk.PluginRunner)
-			fmt.Println(runner.Run(args[1:]))
-			 */
 		},
 	}
 	projectCmd.AddCommand(pluginCmd)
@@ -357,7 +329,7 @@ may have been brought up to support this project.`,
 					log.Fatal(err)
 				}
 				runner := raw.(sdk.PluginRunner)
-				fmt.Println(runner.Run(args[0:]))
+				log.Println(runner.Run(args[0:]))
 			},
 		}
 		pluginCmd.AddCommand(pluginSubcmd)
