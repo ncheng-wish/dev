@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -282,20 +283,38 @@ may have been brought up to support this project.`,
 		Short: project.Name + " run plugin",
 		Long: "Run an extended plugin for " + project.Name + `. Choose the plugin name from "Available Commands" to start the plugin`,
 		Run: func(cmd *cobra.Command, args []string) {
-			pluginCommands := []string{}
-			for k, _ := range sdk.PluginMap {
-				pluginCommands = append(pluginCommands, k)
+			pluginPath := "plugin"
+			var err error
+			if !filepath.IsAbs(pluginPath) {
+				pluginPath, err = filepath.Abs(pluginPath)
+				if err != nil {
+					log.Fatalln(err)
+				}
+			}
+			println(pluginPath)
+			plugins := map[string]fs.FileInfo{}
+			pluginNames := []string{}
+			files, err := ioutil.ReadDir(pluginPath)
+			if err != nil {
+				log.Fatalln("Can't find plugin files in \"./plugin/\", please make sure the plugin binary is there!")
+			}
+			for _, file := range files {
+				if !file.IsDir() {
+					plugins[file.Name()] = file
+					pluginNames = append(pluginNames, file.Name())
+				}
 			}
 			if len(args) == 0 {
-				log.Fatalln("Plugin command needed. Available Commands:", pluginCommands)
+				log.Fatalln("Plugin command needed. Available plugins:", pluginNames)
 			}
 			pluginName := args[0]
-			_, ok := sdk.PluginMap[pluginName]
+			_, ok := plugins[pluginName]
 			if !ok {
-				log.Fatalln("Plugin", pluginName, "does not exist!")
+				log.Fatalln("Plugin", pluginName, "binary does not exist. Available plugins:", pluginNames)
 			}
 		},
 	}
+
 	projectCmd.AddCommand(pluginCmd)
 	for key, _ := range sdk.PluginMap {
 		pluginSubcmd := &cobra.Command{
