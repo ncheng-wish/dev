@@ -283,20 +283,18 @@ may have been brought up to support this project.`,
 		Short: project.Name + " run plugin",
 		Long: "Run an extended plugin for " + project.Name + `. Choose the plugin name from "Available Commands" to start the plugin`,
 		Run: func(cmd *cobra.Command, args []string) {
-			pluginPath := "plugin"
-			var err error
-			if !filepath.IsAbs(pluginPath) {
-				pluginPath, err = filepath.Abs(pluginPath)
-				if err != nil {
-					log.Fatalln(err)
-				}
+			home, err := os.UserHomeDir()
+			if err != nil {
+				log.Fatalln(err)
 			}
+			pluginPath := "plugin"
+			pluginPath = filepath.Join(home, pluginPath)
 			println(pluginPath)
 			plugins := map[string]fs.FileInfo{}
 			pluginNames := []string{}
 			files, err := ioutil.ReadDir(pluginPath)
 			if err != nil {
-				log.Fatalln("Can't find plugin files in \"./plugin/\", please make sure the plugin binary is there!")
+				log.Fatalf("Can't find plugin files in %s, please make sure the plugin binary is there!", pluginPath)
 			}
 			for _, file := range files {
 				if !file.IsDir() {
